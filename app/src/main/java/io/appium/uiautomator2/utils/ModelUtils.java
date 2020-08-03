@@ -2,14 +2,12 @@ package io.appium.uiautomator2.utils;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-
+import io.appium.uiautomator2.http.IHttpRequest;
+import io.appium.uiautomator2.model.api.BaseModel;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.lang.reflect.Type;
-
-import io.appium.uiautomator2.http.IHttpRequest;
-import io.appium.uiautomator2.model.api.BaseModel;
 
 public class ModelUtils {
     public static <T extends BaseModel> T toModel(IHttpRequest request, Class<T> modelCls) {

@@ -27,7 +27,7 @@ import io.appium.uiautomator2.model.settings.MjpegServerScreenshotQuality;
 import io.appium.uiautomator2.model.settings.ServerPort;
 
 public class ServerConfig {
-    public static final int DEFAULT_SERVER_PORT = 6790;
+    public static final int DEFAULT_SERVER_PORT = 4724;
     public static final int DEFAULT_MJPEG_SERVER_PORT = 7810;
     public static final int DEFAULT_MJPEG_SERVER_FRAMERATE = 10;
     public static final int DEFAULT_MJPEG_SCALING_FACTOR = 50;

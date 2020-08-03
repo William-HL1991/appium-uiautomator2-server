@@ -20,7 +20,6 @@ import android.view.Display;
 import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.test.uiautomator.UiDevice;
-
 import io.appium.uiautomator2.common.exceptions.UiAutomator2Exception;
 import io.appium.uiautomator2.utils.Device;
 

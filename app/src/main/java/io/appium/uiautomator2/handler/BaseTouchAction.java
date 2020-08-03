@@ -19,19 +19,20 @@ package io.appium.uiautomator2.handler;
 import android.graphics.Rect;
 
 import androidx.annotation.Nullable;
+import io.appium.uiautomator2.core.InteractionController;
+import io.appium.uiautomator2.core.UiAutomatorBridge;
+import io.appium.uiautomator2.model.api.touch.appium.TouchEventModel;
+import io.appium.uiautomator2.model.api.touch.appium.TouchEventParams;
+
 import androidx.test.uiautomator.UiObjectNotFoundException;
 
 import io.appium.uiautomator2.common.exceptions.ElementNotFoundException;
-import io.appium.uiautomator2.core.InteractionController;
-import io.appium.uiautomator2.core.UiAutomatorBridge;
 import io.appium.uiautomator2.handler.request.SafeRequestHandler;
 import io.appium.uiautomator2.http.AppiumResponse;
 import io.appium.uiautomator2.http.IHttpRequest;
 import io.appium.uiautomator2.model.AndroidElement;
 import io.appium.uiautomator2.model.AppiumUIA2Driver;
 import io.appium.uiautomator2.model.Session;
-import io.appium.uiautomator2.model.api.touch.appium.TouchEventModel;
-import io.appium.uiautomator2.model.api.touch.appium.TouchEventParams;
 import io.appium.uiautomator2.utils.Logger;
 
 import static io.appium.uiautomator2.utils.ModelUtils.toModel;
@@ -64,8 +65,8 @@ public abstract class BaseTouchAction extends SafeRequestHandler {
                 throw new IllegalArgumentException(
                         "Both x and y coordinates must be provided without element id set");
             }
-            clickX = (int) Math.round(params.x);
-            clickY = (int) Math.round(params.y);
+            clickX = params.x;
+            clickY = params.y;
         }
 
         executeEvent();

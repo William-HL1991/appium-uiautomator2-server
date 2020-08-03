@@ -28,7 +28,8 @@ public class WaitForIdleTimeout extends AbstractSetting<Long> {
 
     @Override
     public Long getValue() {
-        return Configurator.getInstance().getWaitForIdleTimeout();
+        return Long.valueOf(1);
+//        return Configurator.getInstance().getWaitForIdleTimeout();
     }
 
     @Override

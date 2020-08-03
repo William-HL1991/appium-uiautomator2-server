@@ -20,6 +20,7 @@ import io.appium.uiautomator2.core.AccessibilityNodeInfoDumper;
 import io.appium.uiautomator2.handler.request.SafeRequestHandler;
 import io.appium.uiautomator2.http.AppiumResponse;
 import io.appium.uiautomator2.http.IHttpRequest;
+import io.appium.uiautomator2.utils.Logger;
 
 import static io.appium.uiautomator2.utils.AXWindowHelpers.refreshAccessibilityCache;
 
@@ -34,7 +35,17 @@ public class Source extends SafeRequestHandler {
 
     @Override
     protected AppiumResponse safeHandle(IHttpRequest request) {
+        long time1 = System.currentTimeMillis();
         refreshAccessibilityCache();
-        return new AppiumResponse(getSessionId(request), new AccessibilityNodeInfoDumper().dumpToXml());
+        long time2 = System.currentTimeMillis();
+        Logger.info("refreshAccessibilityCache 花费时间是：" + (time2 - time1));
+        String dumpResult = new AccessibilityNodeInfoDumper().dumpToXml();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                refreshAccessibilityCache();
+            }
+        }).start();
+        return new AppiumResponse(getSessionId(request), dumpResult);
     }
 }

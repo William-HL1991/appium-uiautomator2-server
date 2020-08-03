@@ -17,10 +17,6 @@ package io.appium.uiautomator2.unittest.test.internal;
 
 import android.content.Context;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.uiautomator.Configurator;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.junit.AfterClass;
@@ -33,6 +29,9 @@ import org.junit.runners.MethodSorters;
 
 import java.io.IOException;
 
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.uiautomator.Configurator;
 import io.appium.uiautomator2.model.By;
 import io.appium.uiautomator2.server.ServerInstrumentation;
 import io.appium.uiautomator2.unittest.test.Config;

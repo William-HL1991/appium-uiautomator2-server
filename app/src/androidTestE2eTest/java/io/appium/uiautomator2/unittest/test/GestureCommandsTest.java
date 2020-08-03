@@ -15,6 +15,7 @@
  */
 package io.appium.uiautomator2.unittest.test;
 
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -24,7 +25,6 @@ import io.appium.uiautomator2.model.By;
 import io.appium.uiautomator2.unittest.test.internal.BaseTest;
 import io.appium.uiautomator2.unittest.test.internal.Response;
 import io.appium.uiautomator2.utils.Device;
-import io.netty.handler.codec.http.HttpResponseStatus;
 
 import static io.appium.uiautomator2.unittest.test.internal.TestUtils.waitForElementInvisibility;
 import static io.appium.uiautomator2.unittest.test.internal.TestUtils.waitForSeconds;

@@ -19,7 +19,6 @@ package io.appium.uiautomator2.handler;
 import android.os.SystemClock;
 
 import androidx.test.uiautomator.UiObjectNotFoundException;
-
 import io.appium.uiautomator2.common.exceptions.InvalidElementStateException;
 import io.appium.uiautomator2.core.InteractionController;
 import io.appium.uiautomator2.utils.Logger;
@@ -43,9 +42,7 @@ public class TouchLongClick extends BaseTouchAction {
 
     @Override
     protected void executeEvent() throws UiObjectNotFoundException {
-        int duration = params.duration != null
-                ? (int) Math.round(params.duration)
-                : DEFAULT_DURATION_MS;
+        int duration = params.duration != null ? params.duration : DEFAULT_DURATION_MS;
         printEventDebugLine(duration);
 
         if (performLongClick(clickX, clickY, duration)) {

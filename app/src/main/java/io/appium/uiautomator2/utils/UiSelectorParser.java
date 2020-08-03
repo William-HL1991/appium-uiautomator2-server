@@ -18,7 +18,6 @@ package io.appium.uiautomator2.utils;
 
 import androidx.test.uiautomator.UiObjectNotFoundException;
 import androidx.test.uiautomator.UiSelector;
-
 import io.appium.uiautomator2.common.exceptions.UiSelectorSyntaxException;
 
 /**

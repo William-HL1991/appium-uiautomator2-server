@@ -20,6 +20,9 @@ import androidx.test.uiautomator.UiObject;
 import androidx.test.uiautomator.UiObjectNotFoundException;
 import androidx.test.uiautomator.UiSelector;
 
+import io.appium.uiautomator2.common.exceptions.NotImplementedException;
+import io.appium.uiautomator2.model.api.FindElementModel;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,7 +31,6 @@ import java.util.regex.Pattern;
 
 import io.appium.uiautomator2.common.exceptions.ElementNotFoundException;
 import io.appium.uiautomator2.common.exceptions.InvalidSelectorException;
-import io.appium.uiautomator2.common.exceptions.NotImplementedException;
 import io.appium.uiautomator2.handler.request.SafeRequestHandler;
 import io.appium.uiautomator2.http.AppiumResponse;
 import io.appium.uiautomator2.http.IHttpRequest;
@@ -37,7 +39,6 @@ import io.appium.uiautomator2.model.AppiumUIA2Driver;
 import io.appium.uiautomator2.model.By;
 import io.appium.uiautomator2.model.By.ById;
 import io.appium.uiautomator2.model.Session;
-import io.appium.uiautomator2.model.api.FindElementModel;
 import io.appium.uiautomator2.model.internal.CustomUiDevice;
 import io.appium.uiautomator2.model.internal.NativeAndroidBySelector;
 import io.appium.uiautomator2.utils.ElementHelpers;
@@ -68,18 +69,16 @@ public class FindElements extends SafeRequestHandler {
         final String method = model.strategy;
         final String selector = model.selector;
         final String contextId = model.context;
-        if (contextId == null) {
-            Logger.info(String.format("method: '%s', selector: '%s'", method, selector));
-        } else {
-            Logger.info(String.format("method: '%s', selector: '%s', contextId: '%s'",
-                    method, selector, contextId));
-        }
+
+        Logger.info(String.format("Find elements command using '%s' with selector '%s'.", method, selector));
 
         By by = new NativeAndroidBySelector().pickFrom(method, selector);
 
         final List<?> elements;
         try {
-            elements = isBlank(contextId) ? this.findElements(by) : this.findElements(by, contextId);
+            elements = isBlank(contextId)
+                    ? this.findElements(by)
+                    : this.findElements(by, contextId);
 
             Session session = AppiumUIA2Driver.getInstance().getSessionOrThrow();
             for (Object element : elements) {
@@ -90,8 +89,10 @@ public class FindElements extends SafeRequestHandler {
             }
             return new AppiumResponse(getSessionId(request), result);
         } catch (ElementNotFoundException ignored) {
-            // Return an empty array:
-            // https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#sessionsessionidelements
+            /* For findElements up on no Element. instead of throwing exception unlike in findElement,
+               empty array should be return. for more info refer:
+               https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#sessionsessionidelements
+              */
             return new AppiumResponse(getSessionId(request), result);
         }
     }

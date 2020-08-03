@@ -20,8 +20,7 @@ import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.util.Base64;
 
-import androidx.test.uiautomator.UiDevice;
-
+import io.appium.uiautomator2.unittest.test.internal.TestUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -33,11 +32,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import androidx.test.uiautomator.UiDevice;
 import io.appium.uiautomator2.model.By;
 import io.appium.uiautomator2.unittest.test.internal.BaseTest;
 import io.appium.uiautomator2.unittest.test.internal.Response;
 import io.appium.uiautomator2.unittest.test.internal.SkipHeadlessDevices;
-import io.appium.uiautomator2.unittest.test.internal.TestUtils;
 import io.appium.uiautomator2.utils.Device;
 
 import static io.appium.uiautomator2.unittest.test.internal.TestUtils.getJsonObjectCountInJsonArray;
@@ -51,9 +50,9 @@ import static io.appium.uiautomator2.unittest.test.internal.commands.DeviceComma
 import static io.appium.uiautomator2.unittest.test.internal.commands.DeviceCommands.getSettings;
 import static io.appium.uiautomator2.unittest.test.internal.commands.DeviceCommands.rotateScreen;
 import static io.appium.uiautomator2.unittest.test.internal.commands.DeviceCommands.screenshot;
-import static io.appium.uiautomator2.unittest.test.internal.commands.DeviceCommands.scrollToClassName;
 import static io.appium.uiautomator2.unittest.test.internal.commands.DeviceCommands.scrollToElement;
 import static io.appium.uiautomator2.unittest.test.internal.commands.DeviceCommands.scrollToText;
+import static io.appium.uiautomator2.unittest.test.internal.commands.DeviceCommands.scrollToClassName;
 import static io.appium.uiautomator2.unittest.test.internal.commands.DeviceCommands.setRotation;
 import static io.appium.uiautomator2.unittest.test.internal.commands.DeviceCommands.updateSetting;
 import static io.appium.uiautomator2.unittest.test.internal.commands.DeviceCommands.updateSettings;
@@ -314,7 +313,8 @@ public class DeviceCommandsTest extends BaseTest {
         String contextId = response.getElementId();
 
         //child element - By.xpath  (UiObject2)
-        response = findElement(By.xpath("(//*[@class='android.widget.TextView'])[2]"), contextId);
+        response = findElement(By.xpath("//hierarchy//*[@class='android.widget.TextView'][2]"),
+                contextId);
         response = getText(response.getElementId());
         assertEquals("Accessibility", response.getValue());
     }
@@ -376,18 +376,6 @@ public class DeviceCommandsTest extends BaseTest {
                 ".TextView\")"), contextId);
         response = getText(response.getElementId());
         assertEquals("Access'ibility", response.getValue());
-    }
-
-    @Test
-    public void findElementWithContextId10() {
-        //parent element - By.androidUiAutomator (UiObject)
-        Response response = findElement(By.androidUiAutomator("new UiSelector().resourceId" +
-                "(\"android:id/list\")"));
-        String contextId = response.getElementId();
-
-        //child element - relative By.xpath
-        response = findElement(By.xpath("./*"), contextId);
-        assertTrue(response.isSuccessful());
     }
 
     @Test

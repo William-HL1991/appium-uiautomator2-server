@@ -20,6 +20,12 @@ import android.app.Instrumentation;
 import android.os.SystemClock;
 import android.view.accessibility.AccessibilityNodeInfo;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+
 import androidx.annotation.Nullable;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.BySelector;
@@ -27,13 +33,6 @@ import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.UiSelector;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
-
 import io.appium.uiautomator2.common.exceptions.InvalidElementStateException;
 import io.appium.uiautomator2.common.exceptions.InvalidSelectorException;
 import io.appium.uiautomator2.common.exceptions.UiAutomator2Exception;
@@ -72,16 +71,26 @@ public class CustomUiDevice {
      */
     private CustomUiDevice() {
         try {
-            this.mInstrumentation = (Instrumentation) getField(UiDevice.class, FIELD_M_INSTRUMENTATION, Device.getUiDevice());
-            this.API_LEVEL_ACTUAL = getField(UiDevice.class, FIELD_API_LEVEL_ACTUAL, Device.getUiDevice());
-            this.ByMatcherClass = ReflectionUtils.getClass("androidx.test.uiautomator.ByMatcher");
-            this.METHOD_FIND_MATCH = method(ByMatcherClass, "findMatch", UiDevice.class, BySelector.class, AccessibilityNodeInfo[].class);
-            this.METHOD_FIND_MATCHES = method(ByMatcherClass, "findMatches", UiDevice.class, BySelector.class, AccessibilityNodeInfo[].class);
+            this.mInstrumentation = (Instrumentation) getField(
+                    UiDevice.class, FIELD_M_INSTRUMENTATION, Device.getUiDevice());
+            this.API_LEVEL_ACTUAL = getField(
+                    UiDevice.class, FIELD_API_LEVEL_ACTUAL, Device.getUiDevice());
+            this.ByMatcherClass = ReflectionUtils.getClass(
+                    "androidx.test.uiautomator.ByMatcher");
+            this.METHOD_FIND_MATCH = method(
+                    ByMatcherClass, "findMatch", UiDevice.class, BySelector.class,
+                    AccessibilityNodeInfo[].class);
+            this.METHOD_FIND_MATCHES = method(
+                    ByMatcherClass, "findMatches", UiDevice.class, BySelector.class,
+                    AccessibilityNodeInfo[].class);
             this.uiObject2Constructor = UiObject2.class.getDeclaredConstructors()[0];
             this.uiObject2Constructor.setAccessible(true);
-        } catch (Exception e) {
-            Logger.error("Cannot create CustomUiDevice instance", e);
-            throw e;
+        } catch (Error error) {
+            Logger.error("ERROR", "error", error);
+            throw error;
+        } catch (UiAutomator2Exception error) {
+            Logger.error("ERROR", "error", error);
+            throw new Error(error);
         }
     }
 
@@ -158,13 +167,15 @@ public class CustomUiDevice {
 
         List<AccessibilityNodeInfo> axNodesList;
         if (selector instanceof BySelector) {
-            Object nodes = invoke(METHOD_FIND_MATCHES, ByMatcherClass, getUiDevice(), selector, getCachedWindowRoots());
-            //noinspection unchecked
+            Object nodes = invoke(METHOD_FIND_MATCHES, ByMatcherClass, getUiDevice(), selector,
+                    getCachedWindowRoots());
+            // noinspection unchecked
             axNodesList = (List) nodes;
         } else if (selector instanceof NodeInfoList) {
             axNodesList = ((NodeInfoList) selector).getAll();
         } else {
-            throw new InvalidSelectorException("Selector of type " + selector.getClass().getName() + " not supported");
+            throw new InvalidSelectorException("Selector of type " +
+                    selector.getClass().getName() + " not supported");
         }
         for (AccessibilityNodeInfo node : axNodesList) {
             try {

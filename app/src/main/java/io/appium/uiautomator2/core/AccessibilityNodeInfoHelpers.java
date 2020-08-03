@@ -26,10 +26,6 @@ import android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction;
 
 import androidx.annotation.Nullable;
 import androidx.test.uiautomator.UiDevice;
-
-import io.appium.uiautomator2.common.exceptions.InvalidElementStateException;
-import io.appium.uiautomator2.model.settings.Settings;
-import io.appium.uiautomator2.model.settings.SimpleBoundsCalculation;
 import io.appium.uiautomator2.utils.Logger;
 
 import static io.appium.uiautomator2.utils.Device.getUiDevice;
@@ -85,58 +81,40 @@ public class AccessibilityNodeInfoHelpers {
     /**
      * Returns the node's bounds clipped to the size of the display
      *
-     * @return Empty Rect if node is null, else a Rect containing visible bounds
+     * @return null if node is null, else a Rect containing visible bounds
      */
-    public static Rect getBounds(@Nullable AccessibilityNodeInfo node) {
-        Rect rect = new Rect();
-        if (node == null) {
-            return rect;
-        }
-        if (((SimpleBoundsCalculation) Settings.SIMPLE_BOUNDS_CALCULATION.getSetting()).getValue()) {
-            node.getBoundsInScreen(rect);
-            return rect;
-        }
-
-        UiDevice uiDevice = getUiDevice();
-        Rect screenRect = new Rect(0, 0, uiDevice.getDisplayWidth(), uiDevice.getDisplayHeight());
-        return getBounds(node, screenRect, 0);
+    @SuppressLint("CheckResult")
+    public static Rect getVisibleBounds(@Nullable AccessibilityNodeInfo node) {
+        return getVisibleBounds(node, 0);
     }
 
     /**
      * Returns the node's bounds clipped to the size of the display, limited by the MAX_DEPTH
-     * The implementation is borrowed from `getVisibleBounds` method of `UiObject2` class
      *
-     * @return Empty rect if node is null, else a Rect containing visible bounds
+     * @return null if node is null, else a Rect containing visible bounds
      */
     @SuppressLint("CheckResult")
-    private static Rect getBounds(@Nullable AccessibilityNodeInfo node, Rect displayRect, int depth) {
-        Rect ret = new Rect();
+    private static Rect getVisibleBounds(@Nullable AccessibilityNodeInfo node, int depth) {
         if (node == null) {
-            return ret;
+            return null;
         }
 
         // Get the object bounds in screen coordinates
+        Rect ret = new Rect();
         node.getBoundsInScreen(ret);
+        UiDevice uiDevice = getUiDevice();
 
         // Trim any portion of the bounds that are not on the screen
-        ret.intersect(displayRect);
+        Rect screen = new Rect(0, 0, uiDevice.getDisplayWidth(), uiDevice.getDisplayHeight());
+        ret.intersect(screen);
 
-        // Trim any portion of the bounds that are outside the window
-        Rect window = new Rect();
-        if (node.getWindow() != null) {
-            node.getWindow().getBoundsInScreen(window);
-            ret.intersect(window);
-        }
-
-        // Find the visible bounds of our first scrollable ancestor
-        AccessibilityNodeInfo ancestor;
-        int currentDepth = depth;
-        for (ancestor = node.getParent(); ancestor != null && ++currentDepth < MAX_DEPTH; ancestor = ancestor.getParent()) {
+        // Find the visible bounds of our first scrollable ancestor 
+        for (AccessibilityNodeInfo ancestor = node.getParent(); ancestor != null && ++depth < MAX_DEPTH; ancestor = ancestor.getParent()) {
             // If this ancestor is scrollable
             if (ancestor.isScrollable()) {
                 // Trim any portion of the bounds that are hidden by the non-visible portion of our
                 // ancestor
-                Rect ancestorRect = getBounds(ancestor, displayRect, currentDepth);
+                Rect ancestorRect = getVisibleBounds(ancestor, depth);
                 ret.intersect(ancestorRect);
                 break;
             }
@@ -149,33 +127,19 @@ public class AccessibilityNodeInfoHelpers {
      * Perform accessibility action ACTION_SET_PROGRESS on the node
      *
      * @param value desired progress value
-     * @throws InvalidElementStateException if there was a failure while setting the progress value
+     * @return true if action performed successfully
      */
     @TargetApi(Build.VERSION_CODES.N)
-    public static void setProgressValue(final AccessibilityNodeInfo node, final float value) {
+    public static boolean setProgressValue(final AccessibilityNodeInfo node, final float value) {
         if (!node.getActionList().contains(AccessibilityAction.ACTION_SET_PROGRESS)) {
-            throw new InvalidElementStateException(
-                    String.format("The element '%s' does not support ACTION_SET_PROGRESS. " +
-                            "Did you interact with the correct element?", node));
+            Logger.debug("The element does not support ACTION_SET_PROGRESS action.");
+            return false;
         }
-
-        float valueToSet = value;
-        AccessibilityNodeInfo.RangeInfo rangeInfo = node.getRangeInfo();
-        if (rangeInfo != null) {
-            if (value < rangeInfo.getMin()) {
-                valueToSet = rangeInfo.getMin();
-            }
-            if (value > rangeInfo.getMax()) {
-                valueToSet = rangeInfo.getMax();
-            }
-        }
+        Logger.debug(String.format(
+                "Trying to perform ACTION_SET_PROGRESS accessibility action with value %s", value));
         final Bundle args = new Bundle();
-        args.putFloat(AccessibilityNodeInfo.ACTION_ARGUMENT_PROGRESS_VALUE, valueToSet);
-        if (!node.performAction(AccessibilityAction.ACTION_SET_PROGRESS.getId(), args)) {
-            throw new InvalidElementStateException(
-                    String.format("ACTION_SET_PROGRESS has failed on the element '%s'. " +
-                            "Did you interact with the correct element?", node));
-        }
+        args.putFloat(AccessibilityNodeInfo.ACTION_ARGUMENT_PROGRESS_VALUE, value);
+        return node.performAction(AccessibilityAction.ACTION_SET_PROGRESS.getId(), args);
     }
 
     /**

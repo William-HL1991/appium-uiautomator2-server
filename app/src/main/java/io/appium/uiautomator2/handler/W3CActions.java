@@ -18,8 +18,6 @@ package io.appium.uiautomator2.handler;
 
 import android.view.KeyEvent;
 
-import java.util.List;
-
 import io.appium.uiautomator2.common.exceptions.InvalidArgumentException;
 import io.appium.uiautomator2.common.exceptions.InvalidElementStateException;
 import io.appium.uiautomator2.handler.request.SafeRequestHandler;
@@ -33,6 +31,8 @@ import io.appium.uiautomator2.utils.w3c.ActionsExecutor;
 import io.appium.uiautomator2.utils.w3c.ActionsParseException;
 import io.appium.uiautomator2.utils.w3c.ActionsPreprocessor;
 import io.appium.uiautomator2.utils.w3c.ActionsTokenizer;
+
+import java.util.List;
 
 import static io.appium.uiautomator2.utils.ModelUtils.toModel;
 

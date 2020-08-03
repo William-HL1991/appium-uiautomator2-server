@@ -29,9 +29,6 @@ import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.view.Display;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,6 +38,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import io.appium.uiautomator2.core.UiAutomatorBridge;
 
 import static android.bluetooth.BluetoothAdapter.STATE_OFF;

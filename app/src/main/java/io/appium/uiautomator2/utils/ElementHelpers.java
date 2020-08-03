@@ -22,14 +22,8 @@ import android.os.Bundle;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.test.uiautomator.By;
-import androidx.test.uiautomator.BySelector;
-import androidx.test.uiautomator.UiObject;
-import androidx.test.uiautomator.UiObject2;
-import androidx.test.uiautomator.UiObjectNotFoundException;
-
+import io.appium.uiautomator2.model.api.ElementModel;
+import io.appium.uiautomator2.model.api.ElementRectModel;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -38,10 +32,19 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.BySelector;
+import androidx.test.uiautomator.UiObject;
+import androidx.test.uiautomator.UiObject2;
+import androidx.test.uiautomator.UiObjectNotFoundException;
 import io.appium.uiautomator2.common.exceptions.ElementNotFoundException;
 import io.appium.uiautomator2.common.exceptions.NoSuchAttributeException;
 import io.appium.uiautomator2.common.exceptions.UiAutomator2Exception;
@@ -56,7 +59,6 @@ import io.appium.uiautomator2.model.AppiumUIA2Driver;
 import io.appium.uiautomator2.model.Session;
 import io.appium.uiautomator2.model.UiObject2Element;
 
-import static android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction.ACTION_SET_PROGRESS;
 import static io.appium.uiautomator2.model.internal.CustomUiDevice.getInstance;
 import static io.appium.uiautomator2.utils.Device.getAndroidElement;
 import static io.appium.uiautomator2.utils.Device.getUiDevice;
@@ -64,6 +66,7 @@ import static io.appium.uiautomator2.utils.ReflectionUtils.getField;
 import static io.appium.uiautomator2.utils.ReflectionUtils.method;
 import static io.appium.uiautomator2.utils.StringHelpers.charSequenceToString;
 import static io.appium.uiautomator2.utils.StringHelpers.toNonNullString;
+import static io.appium.uiautomator2.utils.StringHelpers.toNullableString;
 
 public abstract class ElementHelpers {
     private static Method findAccessibilityNodeInfo;
@@ -112,18 +115,6 @@ public abstract class ElementHelpers {
         return result;
     }
 
-    public static boolean canSetProgress(Object element) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-            return false;
-        }
-
-        AccessibilityNodeInfo nodeInfo = AccessibilityNodeInfoGetter.fromUiObject(element);
-        if (nodeInfo == null) {
-            throw new ElementNotFoundException();
-        }
-        return nodeInfo.getActionList().contains(ACTION_SET_PROGRESS);
-    }
-
     /**
      * Set text of an element
      *
@@ -137,6 +128,25 @@ public abstract class ElementHelpers {
         AccessibilityNodeInfo nodeInfo = AccessibilityNodeInfoGetter.fromUiObject(element);
         if (nodeInfo == null) {
             throw new ElementNotFoundException();
+        }
+
+        /*
+         * Execute ACTION_SET_PROGRESS action (introduced in API level 24)
+         * if element has range info and text can be converted to float.
+         * Falling back to element.setText() if something goes wrong.
+         */
+        if (nodeInfo.getRangeInfo() != null && Build.VERSION.SDK_INT >= 24) {
+            Logger.debug("Element has range info.");
+            try {
+                if (AccessibilityNodeInfoHelpers.setProgressValue(nodeInfo,
+                        Float.parseFloat(Objects.requireNonNull(text)))) {
+                    return true;
+                }
+            } catch (NumberFormatException e) {
+                Logger.debug(String.format("Can not convert \"%s\" to float.", text));
+            }
+            Logger.debug("Unable to perform ACTION_SET_PROGRESS action. " +
+                    "Falling back to element.setText()");
         }
 
         /*
@@ -154,17 +164,6 @@ public abstract class ElementHelpers {
         return nodeInfo.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args);
     }
 
-    public static void setProgress(final Object element, float value) {
-        AccessibilityNodeInfo nodeInfo = AccessibilityNodeInfoGetter.fromUiObject(element);
-        if (nodeInfo == null) {
-            throw new ElementNotFoundException();
-        }
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-            throw new IllegalStateException("Setting progress is not supported on Android API below 24");
-        }
-        AccessibilityNodeInfoHelpers.setProgressValue(nodeInfo, value);
-    }
-
     public static AndroidElement findElement(final BySelector ui2BySelector) throws UiAutomator2Exception {
         Object ui2Object = getInstance().findObject(ui2BySelector);
         if (ui2Object == null) {
@@ -180,13 +179,13 @@ public abstract class ElementHelpers {
     }
 
     @NonNull
-    public static String getText(Object element) {
+    public static String getText(Object element) throws UiObjectNotFoundException {
         //noinspection ConstantConditions
         return getText(element, true);
     }
 
     @Nullable
-    public static String getText(Object element, boolean replaceNull) {
+    public static String getText(Object element, boolean replaceNull) throws UiObjectNotFoundException {
         if (element instanceof UiObject2) {
             /*
              * If the given element is TOAST element, we can't perform any operation on {@link UiObject2} as it
@@ -257,8 +256,8 @@ public abstract class ElementHelpers {
             y2 = yMargin;
         }
 
-        Session session = AppiumUIA2Driver.getInstance().getSessionOrThrow();
-        AccessibilityScrollData lastScrollData;
+        Session session = AppiumUIA2Driver.getInstance().getSession();
+        AccessibilityScrollData lastScrollData = null;
         Logger.debug("Doing a mini swipe-and-back in the scrollable view to generate scroll data");
         swipe(x1, y1, x2, y2);
         lastScrollData = session.getLastScrollData();

@@ -20,9 +20,9 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 
-import androidx.annotation.Nullable;
-
 import java.util.Arrays;
+
+import androidx.annotation.Nullable;
 
 import static io.appium.uiautomator2.utils.StringHelpers.charSequenceToNonNullString;
 

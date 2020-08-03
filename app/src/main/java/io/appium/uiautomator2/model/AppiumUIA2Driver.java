@@ -16,12 +16,11 @@
 
 package io.appium.uiautomator2.model;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
 import java.util.Map;
 import java.util.UUID;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import io.appium.uiautomator2.common.exceptions.NoSuchDriverException;
 
 public class AppiumUIA2Driver {
@@ -39,7 +38,7 @@ public class AppiumUIA2Driver {
     }
 
     public String initializeSession(Map<String, Object> capabilities) {
-        this.session = new Session(UUID.randomUUID().toString(), capabilities);
+        this.session = new Session("", capabilities);
         return this.session.getSessionId();
     }
 

@@ -16,15 +16,12 @@
 
 package io.appium.uiautomator2.server;
 
-import androidx.annotation.Nullable;
-
-import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import androidx.annotation.Nullable;
 import io.appium.uiautomator2.handler.AcceptAlert;
 import io.appium.uiautomator2.handler.CaptureScreenshot;
 import io.appium.uiautomator2.handler.Clear;
@@ -45,9 +42,9 @@ import io.appium.uiautomator2.handler.GetDeviceSize;
 import io.appium.uiautomator2.handler.GetElementAttribute;
 import io.appium.uiautomator2.handler.GetElementScreenshot;
 import io.appium.uiautomator2.handler.GetName;
-import io.appium.uiautomator2.handler.GetOrientation;
 import io.appium.uiautomator2.handler.GetRect;
 import io.appium.uiautomator2.handler.GetRotation;
+import io.appium.uiautomator2.handler.GetOrientation;
 import io.appium.uiautomator2.handler.GetSessionDetails;
 import io.appium.uiautomator2.handler.GetSessions;
 import io.appium.uiautomator2.handler.GetSettings;
@@ -62,11 +59,11 @@ import io.appium.uiautomator2.handler.NewSession;
 import io.appium.uiautomator2.handler.OpenNotification;
 import io.appium.uiautomator2.handler.PressBack;
 import io.appium.uiautomator2.handler.PressKeyCode;
+import io.appium.uiautomator2.handler.SetOrientation;
 import io.appium.uiautomator2.handler.ScrollTo;
 import io.appium.uiautomator2.handler.ScrollToElement;
 import io.appium.uiautomator2.handler.SendKeysToElement;
 import io.appium.uiautomator2.handler.SetClipboard;
-import io.appium.uiautomator2.handler.SetOrientation;
 import io.appium.uiautomator2.handler.SetRotation;
 import io.appium.uiautomator2.handler.Source;
 import io.appium.uiautomator2.handler.Status;
@@ -83,6 +80,7 @@ import io.appium.uiautomator2.http.AppiumResponse;
 import io.appium.uiautomator2.http.IHttpRequest;
 import io.appium.uiautomator2.http.IHttpResponse;
 import io.appium.uiautomator2.http.IHttpServlet;
+import io.appium.uiautomator2.model.NotificationListener;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 public class AppiumServlet implements IHttpServlet {
@@ -102,6 +100,7 @@ public class AppiumServlet implements IHttpServlet {
 
     public AppiumServlet() {
         init();
+        NotificationListener.getInstance().start();
     }
 
     private void init() {
@@ -283,7 +282,7 @@ public class AppiumServlet implements IHttpServlet {
 
         String id = getParameter(mappedUri, request.uri(), ":id");
         if (id != null) {
-            request.data().put(ELEMENT_ID_KEY, id);
+            request.data().put(ELEMENT_ID_KEY, URLDecoder.decode(id));
         }
         for (int elementIdx = SECOND_ELEMENT_IDX; elementIdx < MAX_ELEMENTS + SECOND_ELEMENT_IDX; ++elementIdx) {
             String elementId = getParameter(mappedUri, request.uri(), ":id" + elementIdx);
@@ -295,19 +294,19 @@ public class AppiumServlet implements IHttpServlet {
 
     @Nullable
     private String getParameter(String configuredUri, String actualUri, String param) {
+        return getParameter(configuredUri, actualUri, param, true);
+    }
+
+    @Nullable
+    private String getParameter(String configuredUri, String actualUri, String param, boolean sectionLengthValidation) {
         String[] configuredSections = configuredUri.split("/");
         String[] currentSections = actualUri.split("/");
-        if (configuredSections.length != currentSections.length) {
+        if (sectionLengthValidation && configuredSections.length != currentSections.length) {
             return null;
         }
         for (int i = 0; i < currentSections.length; i++) {
-            if (!configuredSections[i].contains(param)) {
-                continue;
-            }
-            try {
-                return URLDecoder.decode(currentSections[i], StandardCharsets.UTF_8.name());
-            } catch (UnsupportedEncodingException e) {
-                throw new IllegalArgumentException(e);
+            if (configuredSections[i].contains(param)) {
+                return currentSections[i];
             }
         }
         return null;

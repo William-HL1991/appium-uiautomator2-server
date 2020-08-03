@@ -18,10 +18,10 @@ package io.appium.uiautomator2.model;
 
 import android.graphics.Rect;
 
+import java.util.List;
+
 import androidx.annotation.Nullable;
 import androidx.test.uiautomator.UiObjectNotFoundException;
-
-import java.util.List;
 
 public interface AndroidElement {
 
@@ -37,17 +37,13 @@ public interface AndroidElement {
 
     boolean longClick() throws UiObjectNotFoundException;
 
-    String getText();
+    String getText() throws UiObjectNotFoundException;
 
     String getName() throws UiObjectNotFoundException;
 
     String getAttribute(String attr) throws UiObjectNotFoundException;
 
     boolean setText(final String text);
-
-    boolean canSetProgress();
-
-    void setProgress(final float value);
 
     String getId();
 

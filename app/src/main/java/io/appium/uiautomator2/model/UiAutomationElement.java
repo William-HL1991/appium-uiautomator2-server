@@ -26,7 +26,9 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.WeakHashMap;
 
+import androidx.annotation.Nullable;
 import io.appium.uiautomator2.core.AccessibilityNodeInfoHelpers;
 import io.appium.uiautomator2.utils.Attribute;
 import io.appium.uiautomator2.utils.Logger;
@@ -40,15 +42,15 @@ import static io.appium.uiautomator2.utils.StringHelpers.charSequenceToNullableS
  * A UiElement that gets attributes via the Accessibility API.
  */
 @TargetApi(18)
-public class UiElementSnapshot extends UiElement<AccessibilityNodeInfo, UiElementSnapshot> {
+public class UiAutomationElement extends UiElement<AccessibilityNodeInfo, UiAutomationElement> {
     private final static String ROOT_NODE_NAME = "hierarchy";
     // https://github.com/appium/appium/issues/12545
-    private final static int DEFAULT_MAX_DEPTH = 70;
+    private final static int MAX_DEPTH = 70;
 
+    private final static Map<AccessibilityNodeInfo, UiAutomationElement> cache = new WeakHashMap<>();
     private final Map<Attribute, Object> attributes;
-    private final List<UiElementSnapshot> children;
+    private final List<UiAutomationElement> children;
     private int depth = 0;
-    private int maxDepth = DEFAULT_MAX_DEPTH;
 
     /**
      * A snapshot of all attributes is taken at construction. The attributes of a
@@ -56,62 +58,51 @@ public class UiElementSnapshot extends UiElement<AccessibilityNodeInfo, UiElemen
      * {@link AccessibilityNodeInfo} is updated, a new {@code UiAutomationElement}
      * instance will be created in
      */
-    private UiElementSnapshot(AccessibilityNodeInfo node, int index, int maxDepth) {
+    private UiAutomationElement(AccessibilityNodeInfo node, int index) {
         super(checkNotNull(node));
-        this.maxDepth = maxDepth;
 
         Map<Attribute, Object> attributes = new LinkedHashMap<>();
         // The same sequence will be used for node attributes in xml page source
-        setAttribute(attributes, Attribute.INDEX, index);
-        setAttribute(attributes, Attribute.PACKAGE, charSequenceToNullableString(node.getPackageName()));
-        setAttribute(attributes, Attribute.CLASS, charSequenceToNullableString(node.getClassName()));
-        setAttribute(attributes, Attribute.TEXT, AccessibilityNodeInfoHelpers.getText(node, true));
-        setAttribute(attributes, Attribute.ORIGINAL_TEXT, AccessibilityNodeInfoHelpers.getText(node, false));
-        setAttribute(attributes, Attribute.CONTENT_DESC, charSequenceToNullableString(node.getContentDescription()));
-        setAttribute(attributes, Attribute.RESOURCE_ID, node.getViewIdResourceName());
-        setAttribute(attributes, Attribute.CHECKABLE, node.isCheckable());
-        setAttribute(attributes, Attribute.CHECKED, node.isChecked());
-        setAttribute(attributes, Attribute.CLICKABLE, node.isClickable());
-        setAttribute(attributes, Attribute.ENABLED, node.isEnabled());
-        setAttribute(attributes, Attribute.FOCUSABLE, node.isFocusable());
-        setAttribute(attributes, Attribute.FOCUSED, node.isFocused());
-        setAttribute(attributes, Attribute.LONG_CLICKABLE, node.isLongClickable());
-        setAttribute(attributes, Attribute.PASSWORD, node.isPassword());
-        setAttribute(attributes, Attribute.SCROLLABLE, node.isScrollable());
+        put(attributes, Attribute.INDEX, index);
+        put(attributes, Attribute.PACKAGE, charSequenceToNullableString(node.getPackageName()));
+        put(attributes, Attribute.CLASS, charSequenceToNullableString(node.getClassName()));
+        put(attributes, Attribute.TEXT, AccessibilityNodeInfoHelpers.getText(node, true));
+        put(attributes, Attribute.ORIGINAL_TEXT, AccessibilityNodeInfoHelpers.getText(node, false));
+        put(attributes, Attribute.CONTENT_DESC, charSequenceToNullableString(node.getContentDescription()));
+        put(attributes, Attribute.RESOURCE_ID, node.getViewIdResourceName());
+        put(attributes, Attribute.CHECKABLE, node.isCheckable());
+        put(attributes, Attribute.CHECKED, node.isChecked());
+        put(attributes, Attribute.CLICKABLE, node.isClickable());
+        put(attributes, Attribute.ENABLED, node.isEnabled());
+        put(attributes, Attribute.FOCUSABLE, node.isFocusable());
+        put(attributes, Attribute.FOCUSED, node.isFocused());
+        put(attributes, Attribute.LONG_CLICKABLE, node.isLongClickable());
+        put(attributes, Attribute.PASSWORD, node.isPassword());
+        put(attributes, Attribute.SCROLLABLE, node.isScrollable());
         Range<Integer> selectionRange = AccessibilityNodeInfoHelpers.getSelectionRange(node);
         if (selectionRange != null) {
             attributes.put(Attribute.SELECTION_START, selectionRange.getLower());
             attributes.put(Attribute.SELECTION_END, selectionRange.getUpper());
         }
-        setAttribute(attributes, Attribute.SELECTED, node.isSelected());
-        setAttribute(attributes, Attribute.BOUNDS, AccessibilityNodeInfoHelpers.getBounds(node).toShortString());
-        setAttribute(attributes, Attribute.DISPLAYED, node.isVisibleToUser());
+        put(attributes, Attribute.SELECTED, node.isSelected());
+        put(attributes, Attribute.BOUNDS, AccessibilityNodeInfoHelpers.getVisibleBounds(node).toShortString());
+        put(attributes, Attribute.DISPLAYED, node.isVisibleToUser());
         // Skip CONTENT_SIZE as it is quite expensive to compute it for each element
         this.attributes = Collections.unmodifiableMap(attributes);
         this.children = buildChildren(node);
     }
 
-    private UiElementSnapshot(AccessibilityNodeInfo node, int index) {
-        this(node, index, DEFAULT_MAX_DEPTH);
-    }
-
-    private UiElementSnapshot(String hierarchyClassName, AccessibilityNodeInfo[] childNodes, int index) {
+    private UiAutomationElement(String hierarchyClassName, AccessibilityNodeInfo[] childNodes, int index) {
         super(null);
         Map<Attribute, Object> attribs = new LinkedHashMap<>();
-        setAttribute(attribs, Attribute.INDEX, index);
-        setAttribute(attribs, Attribute.CLASS, hierarchyClassName);
+        put(attribs, Attribute.INDEX, index);
+        put(attribs, Attribute.CLASS, hierarchyClassName);
         this.attributes = Collections.unmodifiableMap(attribs);
-        List<UiElementSnapshot> children = new ArrayList<>();
+        List<UiAutomationElement> children = new ArrayList<>();
         for (AccessibilityNodeInfo childNode : childNodes) {
-            children.add(new UiElementSnapshot(childNode, children.size()));
+            children.add(new UiAutomationElement(childNode, children.size()));
         }
         this.children = children;
-    }
-
-    private static void setAttribute(Map<Attribute, Object> attribs, Attribute key, Object value) {
-        if (value != null) {
-            attribs.put(key, value);
-        }
     }
 
     private int getDepth() {
@@ -122,12 +113,13 @@ public class UiElementSnapshot extends UiElement<AccessibilityNodeInfo, UiElemen
         this.depth = depth;
     }
 
-    public int getMaxDepth() {
-        return this.maxDepth;
+    public static UiAutomationElement rebuildForNewRoots(AccessibilityNodeInfo[] roots) {
+        return rebuildForNewRoots(roots, Collections.<CharSequence>emptyList());
     }
 
-    public static UiElementSnapshot take(AccessibilityNodeInfo[] roots, List<CharSequence> toastMSGs) {
-        UiElementSnapshot root = new UiElementSnapshot(ROOT_NODE_NAME, roots, 0);
+    public static UiAutomationElement rebuildForNewRoots(AccessibilityNodeInfo[] roots, List<CharSequence> toastMSGs) {
+        cache.clear();
+        UiAutomationElement root = new UiAutomationElement(ROOT_NODE_NAME, roots, 0);
         for (CharSequence toastMSG : toastMSGs) {
             Logger.debug(String.format("Adding toast message to root: %s", toastMSG));
             root.addToastMsgToRoot(toastMSG);
@@ -135,18 +127,28 @@ public class UiElementSnapshot extends UiElement<AccessibilityNodeInfo, UiElemen
         return root;
     }
 
-    public static UiElementSnapshot take(AccessibilityNodeInfo rootElement) {
-        return new UiElementSnapshot(rootElement, 0);
+    @Nullable
+    public static UiAutomationElement getCachedElement(AccessibilityNodeInfo rawElement, AccessibilityNodeInfo[] windowRoots) {
+        if (cache.get(rawElement) == null) {
+            rebuildForNewRoots(windowRoots);
+        }
+        return cache.get(rawElement);
     }
 
-    public static UiElementSnapshot take(AccessibilityNodeInfo rootElement, int maxDepth) {
-        return new UiElementSnapshot(rootElement, 0, maxDepth);
+    private static UiAutomationElement getOrCreateElement(AccessibilityNodeInfo rawElement, int index, int depth) {
+        UiAutomationElement element = cache.get(rawElement);
+        if (element == null) {
+            element = new UiAutomationElement(rawElement, index);
+            element.setDepth(depth);
+            cache.put(rawElement, element);
+        }
+        return element;
     }
 
-    private static UiElementSnapshot makeNode(AccessibilityNodeInfo rootElement, int index, int depth) {
-        UiElementSnapshot snapshot = new UiElementSnapshot(rootElement, index);
-        snapshot.setDepth(depth);
-        return snapshot;
+    private void put(Map<Attribute, Object> attribs, Attribute key, Object value) {
+        if (value != null) {
+            attribs.put(key, value);
+        }
     }
 
     private void addToastMsgToRoot(CharSequence tokenMSG) {
@@ -156,20 +158,20 @@ public class UiElementSnapshot extends UiElement<AccessibilityNodeInfo, UiElemen
         node.setPackageName("com.android.settings");
         setField("mSealed", true, node);
 
-        this.children.add(new UiElementSnapshot(node, this.children.size()));
+        this.children.add(new UiAutomationElement(node, this.children.size()));
     }
 
-    private List<UiElementSnapshot> buildChildren(AccessibilityNodeInfo node) {
+    private List<UiAutomationElement> buildChildren(AccessibilityNodeInfo node) {
         final int childCount = node.getChildCount();
-        if (childCount == 0 || (getMaxDepth() >= 0 && getDepth() >= getMaxDepth())) {
-            if (getDepth() >= getMaxDepth()) {
-                Logger.info(String.format("Skipping building children of '%s' because the maximum " +
-                        "recursion depth (%s) has been reached", node, getMaxDepth()));
+        if (childCount == 0 || getDepth() >= MAX_DEPTH) {
+            if (getDepth() >= MAX_DEPTH) {
+                Logger.warn(String.format("Skipping building children of '%s' because the maximum " +
+                        "recursion depth (%s) has been reached", node, MAX_DEPTH));
             }
             return Collections.emptyList();
         }
 
-        List<UiElementSnapshot> children = new ArrayList<>(childCount);
+        List<UiAutomationElement> children = new ArrayList<>(childCount);
         boolean areInvisibleElementsAllowed = AppiumUIA2Driver
                 .getInstance()
                 .getSessionOrThrow()
@@ -178,14 +180,14 @@ public class UiElementSnapshot extends UiElement<AccessibilityNodeInfo, UiElemen
             AccessibilityNodeInfo child = node.getChild(i);
             //Ignore if element is not visible on the screen
             if (child != null && (child.isVisibleToUser() || areInvisibleElementsAllowed)) {
-                children.add(makeNode(child, i, getDepth() + 1));
+                children.add(getOrCreateElement(child, i, getDepth() + 1));
             }
         }
         return children;
     }
 
     @Override
-    public List<UiElementSnapshot> getChildren() {
+    public List<UiAutomationElement> getChildren() {
         return children;
     }
 

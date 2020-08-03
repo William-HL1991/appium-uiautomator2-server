@@ -29,6 +29,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        Logger.info("channel read invoked!");
         if (!(msg instanceof FullHttpRequest)) {
             return;
         }
@@ -42,7 +43,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         response.headers().set(PRAGMA, "no-cache");
         response.headers().set(CACHE_CONTROL, "no-store");
 
-        Logger.info(String.format("channel read: %s %s", request.getMethod().toString(), request.getUri()));
+        Logger.info("channel read: " + request.getMethod().toString() + " " + request.getUri());
 
         IHttpRequest httpRequest = new NettyHttpRequest(request);
         IHttpResponse httpResponse = new NettyHttpResponse(response);
@@ -72,7 +73,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        Logger.error("exception caught", cause);
+        Logger.error("Error handling request", cause);
         ctx.close();
         super.exceptionCaught(ctx, cause);
     }
